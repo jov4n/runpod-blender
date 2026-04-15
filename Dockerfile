@@ -59,7 +59,22 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Change least often last for layer cache during dev
 COPY render_plate.py api_server.py ./
-COPY plate2.blend ./plate2.blend
+# plate2.blend is Git LFS. RunPod/GitHub build contexts often pass only the pointer (~130 bytes).
+# Clone the repo and `git lfs pull` so /app/plate2.blend is the real file (override for forks).
+ARG BLEND_GIT_REPO=https://github.com/jov4n/runpod-blender.git
+ARG BLEND_GIT_REF=main
+RUN set -eux \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends git git-lfs \
+    && git lfs install \
+    && git clone --depth 1 --branch "${BLEND_GIT_REF}" "${BLEND_GIT_REPO}" /tmp/blendsrc \
+    && cd /tmp/blendsrc && git lfs pull \
+    && python3 -c "import os; p='plate2.blend'; s=os.path.getsize(p); assert s>10_000_000, 'plate2.blend too small (LFS blob missing?)'" \
+    && install -m0644 plate2.blend /app/plate2.blend \
+    && cd / && rm -rf /tmp/blendsrc /root/.cache \
+    && apt-get purge -y git git-lfs \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
 
 ENV PORT=8000
 EXPOSE 8000

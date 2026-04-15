@@ -140,7 +140,9 @@ def _run_blender_job(
                 fmt = "mp4"
 
         if result.returncode != 0:
-            err = (result.stderr or "")[-8000:]
+            out = (result.stdout or "").strip()
+            err = (result.stderr or "").strip()
+            tail = ((err + "\n--- stdout ---\n" + out) if out else err)[-8000:]
             _write_status(
                 job_dir,
                 {
@@ -148,7 +150,7 @@ def _run_blender_job(
                     "status": "failed",
                     "sku": sku,
                     "error": "Blender exited non-zero",
-                    "stderr_tail": err,
+                    "stderr_tail": tail or "(no stderr/stdout captured)",
                 },
             )
             return
@@ -400,9 +402,12 @@ async def render_sync(
         )
 
         if result.returncode != 0:
+            out = (result.stdout or "").strip()
+            err = (result.stderr or "").strip()
+            tail = ((err + "\n--- stdout ---\n" + out) if out else err)[-2000:]
             raise HTTPException(
                 500,
-                f"Blender render failed:\n{(result.stderr or '')[-2000:]}",
+                f"Blender render failed:\n{tail or '(no stderr/stdout captured)'}",
             )
 
         actual_output = output_path
