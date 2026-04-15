@@ -1,0 +1,12 @@
+tmp_renders/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+.env
+*.mp4
+*.gif
+*.blend1
+.DS_Store
+Thumbs.db
