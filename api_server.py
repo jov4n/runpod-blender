@@ -36,7 +36,7 @@ app = FastAPI(title="Plate Renderer API")
 
 @app.get("/ping")
 async def ping():
-    """Optional convenience on main PORT; RunPod LB probes PORT_HEALTH (see lb_health.py)."""
+    """RunPod load balancer and Docker HEALTHCHECK use GET /ping on the same port as the API."""
     return JSONResponse({"status": "healthy"})
 
 
