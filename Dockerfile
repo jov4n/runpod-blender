@@ -3,10 +3,10 @@
 # Build:
 #   docker build -t plate-render:latest --build-arg BLENDER_VERSION=5.0.1 .
 #
-# Run (local GPU test):
-#   docker run --rm -p 8000:8000 --gpus all plate-render:latest
+# Run (local GPU test — map both ports):
+#   docker run --rm -p 8000:8000 -p 8080:8080 --gpus all -e PORT=8000 -e PORT_HEALTH=8080 plate-render:latest
 #
-# RunPod: set container port 8000; override BLEND_FILE only if you mount a different .blend.
+# RunPod load balancer: main app on PORT, GET /ping on PORT_HEALTH (see RunPod endpoint docs).
 
 FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
@@ -57,13 +57,15 @@ COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Change least often last for layer cache during dev
-COPY render_plate.py api_server.py ./
+COPY render_plate.py api_server.py lb_health.py ./
 COPY plate2.blend ./plate2.blend
 
-# RunPod load balancer often sets PORT=80; local default 8000
+# Main API (RunPod sets PORT, often 8000 or 80). Health checks use PORT_HEALTH (different port).
 ENV PORT=8000
-EXPOSE 8000
+ENV PORT_HEALTH=8080
+EXPOSE 8000 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD sh -c 'curl -fsS "http://127.0.0.1:${PORT:-8000}/ping" >/dev/null || exit 1'
+    CMD sh -c 'curl -fsS "http://127.0.0.1:${PORT_HEALTH:-8080}/ping" >/dev/null || exit 1'
 
-CMD ["sh", "-c", "exec python3 -m uvicorn api_server:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Background: /ping on PORT_HEALTH. Foreground: full API on PORT (PID 1 for signals).
+CMD ["sh", "-c", "python3 -m uvicorn lb_health:app --host 0.0.0.0 --port ${PORT_HEALTH:-8080} & exec python3 -m uvicorn api_server:app --host 0.0.0.0 --port ${PORT:-8000}"]

@@ -36,7 +36,7 @@ app = FastAPI(title="Plate Renderer API")
 
 @app.get("/ping")
 async def ping():
-    """RunPod Serverless load-balancer health check (see https://docs.runpod.io/serverless/load-balancing/overview)."""
+    """Optional convenience on main PORT; RunPod LB probes PORT_HEALTH (see lb_health.py)."""
     return JSONResponse({"status": "healthy"})
 
 
