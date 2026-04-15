@@ -45,7 +45,9 @@ SKU_MAP = {
     "D9609": {
         "collection": "P2",
         "materials": {
-            "p3": ["Image Texture"],
+            # Bowl custom art: material p3.001 (Retopo_Bowl / Retopo_Circle) uses D9609 - BOWL - Template on
+            # Image Texture.001 — not material p3 / Image Texture (Woodland Animals on outer "Bowl" mesh).
+            "p3.001": {"image_match": ["D9609 - BOWL - Template", "BOWL - Template", "Template.jpg"]},
         },
     },
     "D9727": {
